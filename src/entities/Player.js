@@ -8,13 +8,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.setCollideWorldBounds(true);
         this.setOrigin(0.5, 1);
 
+        // Ajuste Visual para "Cavaleiro" (Placeholding com cores)
+        // Redimensionando para parecer mais heróico
+        this.setDisplaySize(40, 70);
+
         // Atributos de Movimentação
-        this.moveSpeed = 300;
-        this.jumpForce = -550;
+        this.moveSpeed = 280; // "Peso" aumentado (levemente mais devagar que antes)
+        this.jumpForce = -580;
         this.isDashing = false;
         this.dashCooldown = false;
         this.dashDuration = 200;
-        this.dashDistance = 800;
+        this.dashDistance = 700;
         this.iframes = false;
 
         // Atributos de Combate
@@ -29,22 +33,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // Magias
         this.mana = 100;
         this.maxMana = 100;
-        this.magicSystem = null; // Definido na Scene
+        this.magicSystem = null;
+
+        // Visual do Ataque
+        this.attackHitbox = scene.add.rectangle(0, 0, 80, 50, 0xffffff, 0.3);
+        this.attackHitbox.setVisible(false);
+        scene.physics.add.existing(this.attackHitbox);
+        this.attackHitbox.body.setAllowGravity(false);
 
         // Input
+        this.setupInput(scene);
+    }
+
+    setupInput(scene) {
         this.cursors = scene.input.keyboard.createCursorKeys();
-        this.keyZ = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z); // Ataque
-        this.keyX = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X); // Dash
-        this.keyC = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C); // Cura
-        this.key1 = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE); // Fogo
-        this.key2 = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO); // Raio
-        this.key3 = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE); // Pedra
+        this.keyZ = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+        this.keyX = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+        this.keyC = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+        this.key1 = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+        this.key2 = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+        this.key3 = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
+        this.keyV = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V); // Tecla para descansar no Shrine
     }
 
     update() {
-        if (this.isDashing || this.isAttacking) return;
+        if (this.isDashing) return;
 
-        // Movimentação Lateral com Inércia
+        // Movimentação Lateral
         if (this.cursors.left.isDown) {
             this.setVelocityX(-this.moveSpeed);
             this.setFlipX(true);
@@ -52,25 +67,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             this.setVelocityX(this.moveSpeed);
             this.setFlipX(false);
         } else {
-            this.setVelocityX(this.body.velocity.x * 0.8); // Inércia leve
+            this.setVelocityX(this.body.velocity.x * 0.85);
         }
 
-        // Pulo com Altura Variável
+        // Pulo
         if (Phaser.Input.Keyboard.JustDown(this.cursors.up) && this.body.blocked.down) {
             this.setVelocityY(this.jumpForce);
         }
 
         if (this.cursors.up.isUp && this.body.velocity.y < 0) {
-            this.setVelocityY(this.body.velocity.y * 0.9); // Release jump early
+            this.setVelocityY(this.body.velocity.y * 0.8);
         }
 
-        // Esquiva (Dash)
+        // Dash
         if (Phaser.Input.Keyboard.JustDown(this.keyX) && !this.dashCooldown) {
             this.dash();
         }
 
-        // Ataque Melee
-        if (Phaser.Input.Keyboard.JustDown(this.keyZ)) {
+        // Ataque (Z)
+        if (Phaser.Input.Keyboard.JustDown(this.keyZ) && !this.isAttacking) {
             this.attack();
         }
 
@@ -92,7 +107,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.isDashing = true;
         this.dashCooldown = true;
         this.iframes = true;
-        this.setAlpha(0.5);
+        this.setAlpha(0.6);
 
         const direction = this.flipX ? -1 : 1;
         this.setVelocityX(this.dashDistance * direction);
@@ -104,39 +119,52 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             this.iframes = false;
             this.setAlpha(1);
             this.body.allowGravity = true;
-            this.setVelocityX(0);
         });
 
-        this.scene.time.delayedCall(1000, () => {
+        this.scene.time.delayedCall(800, () => {
             this.dashCooldown = false;
         });
     }
 
     attack() {
-        const now = this.scene.time.now;
-        if (now - this.lastAttackTime > 1000) {
-            this.comboStep = 0;
-        }
-
         this.isAttacking = true;
         this.comboStep = (this.comboStep % 3) + 1;
-        this.lastAttackTime = now;
 
-        console.log(`Atacando: Combo ${this.comboStep}`);
+        // Ativar visual da hitbox de ataque
+        const range = 60;
+        const direction = this.flipX ? -1 : 1;
+        this.attackHitbox.setPosition(this.x + (range * direction), this.y - 35);
+        this.attackHitbox.setVisible(true);
 
-        // Simulação de animação de ataque
-        this.setVelocityX(0);
-
-        this.scene.time.delayedCall(250, () => {
-            this.isAttacking = false;
+        // Efeito de "Slash" (flash branco rápido)
+        this.scene.tweens.add({
+            targets: this.attackHitbox,
+            alpha: { from: 0.8, to: 0 },
+            duration: 200,
+            onComplete: () => {
+                this.attackHitbox.setVisible(false);
+                this.isAttacking = false;
+            }
         });
+
+        // Pequeno avanço ao atacar
+        this.setVelocityX(150 * direction);
     }
 
     heal() {
         if (this.flasks > 0 && this.hp < this.maxHp) {
             this.flasks--;
             this.hp = Math.min(this.maxHp, this.hp + 40);
-            console.log(`Curado! HP: ${this.hp}, Frascos: ${this.flasks}`);
+
+            // Efeito visual de cura
+            const healEffect = this.scene.add.circle(this.x, this.y - 30, 40, 0x2ecc71, 0.5);
+            this.scene.tweens.add({
+                targets: healEffect,
+                scale: 1.5,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => healEffect.destroy()
+            });
         }
     }
 
@@ -145,14 +173,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
         this.hp -= amount;
         this.iframes = true;
-        this.scene.cameras.main.shake(100, 0.01);
+        this.scene.cameras.main.shake(150, 0.015);
 
         this.scene.tweens.add({
             targets: this,
             alpha: 0,
-            duration: 100,
+            duration: 80,
             yoyo: true,
-            repeat: 5,
+            repeat: 4,
             onComplete: () => {
                 this.iframes = false;
                 this.setAlpha(1);
@@ -165,7 +193,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     die() {
-        console.log("Player morreu!");
-        this.scene.scene.restart();
+        this.scene.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.scene.time.delayedCall(1000, () => {
+            if (this.scene.lastCheckpoint) {
+                this.setPosition(this.scene.lastCheckpoint.x, this.scene.lastCheckpoint.y);
+                this.hp = this.maxHp;
+                this.scene.respawnEnemies();
+                this.scene.cameras.main.fadeIn(500);
+            } else {
+                this.scene.scene.restart();
+            }
+        });
     }
 }
