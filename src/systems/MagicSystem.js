@@ -1,0 +1,68 @@
+export class MagicSystem {
+    constructor(scene, player) {
+        this.scene = scene;
+        this.player = player;
+
+        // Grupos de projéteis
+        this.fireballs = scene.physics.add.group();
+        this.lightningBolts = scene.physics.add.group();
+        this.stones = scene.physics.add.group();
+
+        this.magicCosts = {
+            fire: 30,
+            lightning: 20,
+            stone: 40
+        };
+    }
+
+    castFire() {
+        if (this.player.mana < this.magicCosts.fire) return;
+        this.player.mana -= this.magicCosts.fire;
+
+        const direction = this.player.flipX ? -1 : 1;
+        const fire = this.scene.physics.add.sprite(this.player.x + (20 * direction), this.player.y - 30, 'fire_placeholder');
+
+        this.fireballs.add(fire);
+        fire.body.setAllowGravity(false);
+        fire.setVelocityX(400 * direction);
+
+        // Efeito de fogo (DoT simulado com timer)
+        this.scene.time.delayedCall(1500, () => fire.destroy());
+    }
+
+    castLightning() {
+        if (this.player.mana < this.magicCosts.lightning) return;
+        this.player.mana -= this.magicCosts.lightning;
+
+        const direction = this.player.flipX ? -1 : 1;
+        const bolt = this.scene.add.rectangle(this.player.x + (640 * direction), this.player.y - 30, 1280, 10, 0xffff00);
+        this.scene.physics.add.existing(bolt, true); // Estático para o "flash" do raio
+
+        this.scene.cameras.main.flash(100, 255, 255, 0);
+
+        // O raio atravessa inimigos (lógica de colisão será na cena)
+        this.scene.time.delayedCall(100, () => bolt.destroy());
+    }
+
+    castStone() {
+        if (this.player.mana < this.magicCosts.stone) return;
+        this.player.mana -= this.magicCosts.stone;
+
+        const direction = this.player.flipX ? -1 : 1;
+        const stone = this.scene.physics.add.sprite(this.player.x + (20 * direction), this.player.y - 40, 'stone_placeholder');
+
+        this.stones.add(stone);
+        stone.setVelocity(300 * direction, -200);
+        stone.setAngularVelocity(300);
+        stone.setBounce(0.2);
+
+        this.scene.time.delayedCall(3000, () => stone.destroy());
+    }
+
+    update() {
+        // Recuperação passiva de mana
+        if (this.player.mana < this.player.maxMana) {
+            this.player.mana += 0.1;
+        }
+    }
+}
