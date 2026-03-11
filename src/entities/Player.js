@@ -204,11 +204,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     die() {
-        this.scene.cameras.main.fadeOut(1000, 0, 0, 0);
-        this.scene.time.delayedCall(1000, () => {
+        const diedText = this.scene.add.text(640, 360, 'VOCÊ MORREU', { 
+            fontSize: '64px', 
+            fill: '#ff0000', 
+            fontStyle: 'bold',
+            stroke: '#000',
+            strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1000).setAlpha(0);
+
+        this.scene.tweens.add({
+            targets: diedText,
+            alpha: 1,
+            duration: 500
+        });
+
+        this.scene.cameras.main.fadeOut(2000, 0, 0, 0);
+        this.scene.time.delayedCall(2000, () => {
+            diedText.destroy();
             if (this.scene.lastCheckpoint) {
                 this.setPosition(this.scene.lastCheckpoint.x, this.scene.lastCheckpoint.y);
                 this.hp = this.maxHp;
+                this.flasks = this.maxFlasks; // Também recupera frascos no respawn
                 this.scene.respawnEnemies();
                 this.scene.cameras.main.fadeIn(500);
             } else {

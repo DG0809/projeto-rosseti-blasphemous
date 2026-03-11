@@ -36,11 +36,24 @@ export class MagicSystem {
 
         const direction = this.player.flipX ? -1 : 1;
         const bolt = this.scene.add.rectangle(this.player.x + (640 * direction), this.player.y - 30, 1280, 10, 0xffff00);
-        this.scene.physics.add.existing(bolt, true); // Estático para o "flash" do raio
+        this.scene.physics.add.existing(bolt, true);
 
         this.scene.cameras.main.flash(100, 255, 255, 0);
 
-        // O raio atravessa inimigos (lógica de colisão será na cena)
+        // Lógica de dano movida para o sistema
+        this.scene.enemies.getChildren().forEach(enemy => {
+            const distanceX = Math.abs(enemy.x - this.player.x);
+            const sameSide = (this.player.flipX && enemy.x < this.player.x) || (!this.player.flipX && enemy.x > this.player.x);
+            
+            if (distanceX < 650 && sameSide && Math.abs(enemy.y - this.player.y) < 60) {
+                enemy.takeDamage(40);
+                
+                // Pequeno efeito visual no inimigo atingido
+                const hit = this.scene.add.circle(enemy.x, enemy.y, 20, 0xffff00, 0.8);
+                this.scene.tweens.add({ targets: hit, scale: 2, alpha: 0, duration: 200, onComplete: () => hit.destroy() });
+            }
+        });
+
         this.scene.time.delayedCall(100, () => bolt.destroy());
     }
 

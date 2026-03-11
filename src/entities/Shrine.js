@@ -1,45 +1,69 @@
 export class Shrine extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
+        // Criar um visual mais trabalhado para o Santuário (Estilo Gótico)
+        scene.createPlaceholder('shrine_placeholder', 50, 80, '#2c3e50', '#b8860b');
         super(scene, x, y, 'shrine_placeholder');
+        
         scene.add.existing(this);
-        scene.physics.add.existing(this, true); // Estático
+        scene.physics.add.existing(this, true);
 
         this.active = false;
-        this.setTint(0x555555); // Desativado inicialmente
+        this.setTint(0x333333); 
+        this.setOrigin(0.5, 1);
+        
+        // Adicionar uma pequena chama/luz desativada
+        this.glow = scene.add.circle(x, y - 60, 15, 0xffd700, 0);
+        this.glow.setDepth(this.depth - 1);
     }
 
     activate() {
         if (this.active) return;
         this.active = true;
-        this.setTint(0xffffff); // Brilha ao ativar
+        this.setTint(0xffffff);
 
-        // Efeito visual de ativação
-        this.scene.cameras.main.flash(500, 255, 255, 255);
-
-        // Partículas ou Tween de brilho
+        // Animação de ativação: Chamas e Brilho
         this.scene.tweens.add({
-            targets: this,
-            scaleX: 1.2,
-            scaleY: 1.2,
-            duration: 200,
-            yoyo: true
+            targets: this.glow,
+            alpha: 0.6,
+            scale: 2,
+            duration: 800,
+            ease: 'Power2'
         });
+
+        // Partículas simples de fogo (simuladas com tweens se não houver asset)
+        for (let i = 0; i < 5; i++) {
+            let spark = this.scene.add.circle(this.x, this.y - 20, 4, 0xffa500);
+            this.scene.tweens.add({
+                targets: spark,
+                x: this.x + Phaser.Math.Between(-30, 30),
+                y: this.y - 120,
+                alpha: 0,
+                duration: 1000 + i * 200,
+                onComplete: () => spark.destroy()
+            });
+        }
+
+        this.scene.cameras.main.flash(400, 255, 230, 150, 0.3);
     }
 
     rest(player) {
         this.activate();
 
-        // Recuperar vida e frascos
+        // Recuperar recursos
         player.hp = player.maxHp;
-        player.flasks = player.maxFlasks;
         player.mana = player.maxMana;
+        player.flasks = player.maxFlasks;
 
-        // Definir como ponto de renascimento
-        this.scene.lastCheckpoint = { x: this.x, y: this.y - 40 };
+        // Efeito visual no player
+        this.scene.tweens.add({
+            targets: player,
+            alpha: 0.5,
+            duration: 100,
+            yoyo: true,
+            repeat: 2
+        });
 
-        // Gatilho para respawn de inimigos (implementado na Scene)
+        this.scene.lastCheckpoint = { x: this.x, y: this.y };
         this.scene.respawnEnemies();
-
-        console.log("Descansou no Santuário: Vida e Frascos restaurados!");
     }
 }
