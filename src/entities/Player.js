@@ -35,11 +35,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.maxMana = 100;
         this.magicSystem = null;
 
-        // Visual do Ataque
-        this.attackHitbox = scene.add.rectangle(0, 0, 80, 50, 0xffffff, 0.3);
+        // Visual do Ataque (Mantendo a lógica, mas removendo a visibilidade)
+        this.attackHitbox = scene.add.rectangle(0, 0, 85, 50, 0xffffff, 0); // Alfa 0 para invisibilidade
         this.attackHitbox.setVisible(false);
         scene.physics.add.existing(this.attackHitbox);
         this.attackHitbox.body.setAllowGravity(false);
+
+        // Atributos Extras de Física
+        this.fallMultiplier = 2.5; // Gravidade extra ao cair
+        this.lowJumpMultiplier = 2.1; // Gravidade extra ao soltar o pulo cedo
+        this.airControl = 0.65; // Controle reduzido no ar (mas ainda responsivo)
 
         // Input
         this.setupInput(scene);
@@ -59,24 +64,34 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     update() {
         if (this.isDashing) return;
 
+        const onGround = this.body.blocked.down;
+        const currentSpeed = onGround ? this.moveSpeed : this.moveSpeed * this.airControl;
+
         // Movimentação Lateral
         if (this.cursors.left.isDown) {
-            this.setVelocityX(-this.moveSpeed);
+            this.setVelocityX(-currentSpeed);
             this.setFlipX(true);
         } else if (this.cursors.right.isDown) {
-            this.setVelocityX(this.moveSpeed);
+            this.setVelocityX(currentSpeed);
             this.setFlipX(false);
         } else {
-            this.setVelocityX(this.body.velocity.x * 0.85);
+            // Atrito/Deceleração
+            const friction = onGround ? 0.85 : 0.95;
+            this.setVelocityX(this.body.velocity.x * friction);
         }
 
-        // Pulo
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.up) && this.body.blocked.down) {
+        // Pulo (Coyote time ou buffer podem ser adicionados depois)
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.up) && onGround) {
             this.setVelocityY(this.jumpForce);
         }
 
-        if (this.cursors.up.isUp && this.body.velocity.y < 0) {
-            this.setVelocityY(this.body.velocity.y * 0.8);
+        // --- Lógica de "Better Jump" & "Faster Fall" ---
+        if (this.body.velocity.y > 0) {
+            // Caindo: Aumenta a gravidade
+            this.body.velocity.y += this.fallMultiplier;
+        } else if (this.body.velocity.y < 0 && !this.cursors.up.isDown) {
+            // Subindo mas soltou o botão: Cai mais rápido (Variable Jump Height)
+            this.body.velocity.y += this.lowJumpMultiplier;
         }
 
         // Dash
@@ -130,25 +145,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.isAttacking = true;
         this.comboStep = (this.comboStep % 3) + 1;
 
-        // Ativar visual da hitbox de ataque
-        const range = 60;
+        // Ativar lógica da hitbox de ataque
+        const range = 65;
         const direction = this.flipX ? -1 : 1;
         this.attackHitbox.setPosition(this.x + (range * direction), this.y - 35);
-        this.attackHitbox.setVisible(true);
+        this.attackHitbox.setVisible(false); // Hitbox agora é invisível
 
-        // Efeito de "Slash" (flash branco rápido)
-        this.scene.tweens.add({
-            targets: this.attackHitbox,
-            alpha: { from: 0.8, to: 0 },
-            duration: 200,
-            onComplete: () => {
-                this.attackHitbox.setVisible(false);
-                this.isAttacking = false;
-            }
+        // Flash visual rápido no personagem para indicar ataque (como não temos animação ainda)
+        this.setTint(0xffffff);
+        this.scene.time.delayedCall(100, () => {
+            this.clearTint();
+            this.isAttacking = false;
         });
 
         // Pequeno avanço ao atacar
-        this.setVelocityX(150 * direction);
+        this.setVelocityX(200 * direction);
     }
 
     heal() {

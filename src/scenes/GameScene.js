@@ -10,35 +10,41 @@ export class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        // Personagem Heróico (Cavaleiro) - Azul escuro e cinza
-        this.createPlaceholder('player_placeholder', 32, 64, '#2c3e50', '#95a5a6');
+        // Personagem Heróico (Cavaleiro) - Azul Meia-noite e Aço
+        this.createPlaceholder('player_placeholder', 32, 64, '#1a2533', '#4a627a');
 
-        // Terreno
-        this.createPlaceholder('ground_tile', 32, 32, '#1a1a1a', '#333333');
+        // Terreno - Rocha Vulcânica / Escura
+        this.createPlaceholder('ground_tile', 32, 32, '#0f0f12', '#1c1c21');
 
-        // Zombie (Verde pálido, lento)
-        this.createPlaceholder('zombie_placeholder', 32, 55, '#7f8c8d', '#27ae60');
+        // Zombie (Cinza cadavérico e túnica podre)
+        this.createPlaceholder('zombie_placeholder', 32, 55, '#3b4d42', '#1a241e');
 
-        // Oni (Maior e Vermelho)
-        this.createPlaceholder('oni_placeholder', 48, 80, '#c0392b', '#000000');
+        // Oni (Carmim profundo e chifres negros)
+        this.createPlaceholder('oni_placeholder', 48, 80, '#6d1c1c', '#111111');
 
-        // Magias com brilho
-        this.createPlaceholder('fire_placeholder', 20, 20, '#e67e22', '#f1c40f');
-        this.createPlaceholder('stone_placeholder', 24, 24, '#34495e', '#bdc3c7');
+        // Magias
+        this.createPlaceholder('fire_placeholder', 20, 20, '#d35400', '#f39c12');
+        this.createPlaceholder('stone_placeholder', 24, 24, '#2c3e50', '#7f8c8d');
 
-        // Shrine (Santuário inspirado em Blasphemous/Souls)
-        this.createPlaceholder('shrine_placeholder', 40, 60, '#f1c40f', '#d35400');
+        // Shrine (Ouro Velho e Chamas)
+        this.createPlaceholder('shrine_placeholder', 40, 60, '#b8860b', '#8b4513');
     }
 
     createPlaceholder(key, width, height, color, strokeColor = null) {
         let canvas = this.textures.createCanvas(key, width, height);
         let ctx = canvas.getContext();
-        ctx.fillStyle = color;
+
+        // Gradiente simples para o placeholder não ser totalmente plano
+        let grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, color);
+        grad.addColorStop(1, '#000000');
+        ctx.fillStyle = grad;
+
         ctx.fillRect(0, 0, width, height);
         if (strokeColor) {
             ctx.strokeStyle = strokeColor;
             ctx.lineWidth = 4;
-            ctx.strokeRect(0, 0, width, height);
+            ctx.strokeRect(2, 2, width - 4, height - 4);
         }
         canvas.refresh();
     }
@@ -169,8 +175,8 @@ export class GameScene extends Phaser.Scene {
         this.player.update();
         this.enemies.getChildren().forEach(enemy => {
             if (enemy.update) {
-                if (enemy instanceof Oni) enemy.update(this.player);
-                else enemy.update();
+                // Passa o player para todos os inimigos agora
+                enemy.update(this.player);
             }
         });
 
