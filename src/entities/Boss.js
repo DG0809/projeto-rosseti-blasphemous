@@ -2,8 +2,6 @@ import { Enemy } from './Enemy.js';
 
 export class Boss extends Enemy {
     constructor(scene, x, y) {
-        // Estilo Gótico/Sombrio para o Boss
-        scene.createPlaceholder('boss_placeholder', 160, 240, '#2c003e', '#ff0000');
         super(scene, x, y, 'boss_placeholder');
         
         this.hp = 5000;

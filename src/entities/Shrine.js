@@ -1,7 +1,5 @@
 export class Shrine extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
-        // Criar um visual mais trabalhado para o Santuário (Estilo Gótico)
-        scene.createPlaceholder('shrine_placeholder', 50, 80, '#2c3e50', '#b8860b');
         super(scene, x, y, 'shrine_placeholder');
         
         scene.add.existing(this);

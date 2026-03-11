@@ -28,7 +28,10 @@ export class GameScene extends Phaser.Scene {
         this.createPlaceholder('stone_placeholder', 24, 24, '#2c3e50', '#7f8c8d');
 
         // Shrine (Ouro Velho e Chamas)
-        this.createPlaceholder('shrine_placeholder', 40, 60, '#b8860b', '#8b4513');
+        this.createPlaceholder('shrine_placeholder', 50, 80, '#2c3e50', '#b8860b');
+        
+        // Boss (Estilo Gótico/Sombrio)
+        this.createPlaceholder('boss_placeholder', 160, 240, '#2c003e', '#ff0000');
         
         // Background elements
         this.createPlaceholder('bg_mountain', 400, 300, '#1a1a1a', '#000000');
